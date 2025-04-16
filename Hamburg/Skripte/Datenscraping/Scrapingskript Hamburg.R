@@ -17,7 +17,6 @@ library(rvest)
 
 
 
-
 ################################################################################
 #####                                                                      #####
 #####                        VORBEREITUNG DES LOOPS                        #####
@@ -33,7 +32,7 @@ Link_Stadt <- "https://www.wg-gesucht.de/wg-zimmer-in-Hamburg.55.0.1."
 
 ## Vektor für Selektionslinks nicht älter als 60 Tage erstellen
 
-Selektionslinks <- read_csv("Hamburg/Daten/Rohdaten/Rohdaten.csv", 
+Selektionslinks <- read_csv("Hamburg/Daten/Analysedaten/Analysedaten.csv", 
                             col_select = c("Link", "Datum_Scraping"),
                             show_col_types = FALSE) %>%
   
@@ -47,7 +46,7 @@ Selektionslinks <- read_csv("Hamburg/Daten/Rohdaten/Rohdaten.csv",
 
 ## Leeren Datensatz erstellen
 
-Datensatz_Rohdaten <- tibble()
+Rohdaten_neu <- tibble()
 
 
 
@@ -189,21 +188,21 @@ for(Seite in seq(0, 4, 1)) {
     WG_Subdaten <- sapply(Sublinks, Fun_Subdata)
     
     
-    Datensatz_Rohdaten <- rbind(Datensatz_Rohdaten, 
-                                tibble(Link = as.vector(Sublinks),
-                                       Titel = WG_Subdaten[1,], 
-                                       WG_Konstellation = WG_Subdaten[2,],
-                                       Zimmergröße_Gesamtmiete = WG_Subdaten[3,], 
-                                       Adresse = WG_Subdaten[4,], 
-                                       Datum = WG_Subdaten[5,], 
-                                       WG_Details = WG_Subdaten[6,],
-                                       Kostenfeld = WG_Subdaten[7,],
-                                       Angaben_zum_Objekt = WG_Subdaten[8,],
-                                       Freitext_Zimmer = WG_Subdaten[9,],
-                                       Freitext_Lage = WG_Subdaten[10,],
-                                       Freitext_WG_Leben = WG_Subdaten[11,],
-                                       Freitext_Sonstiges = WG_Subdaten[12,],
-                                       Datum_Scraping = Sys.Date()))
+    Rohdaten_neu <- rbind(Rohdaten_neu, 
+                          tibble(Link = as.vector(Sublinks),
+                          Titel = WG_Subdaten[1,], 
+                          WG_Konstellation = WG_Subdaten[2,],
+                          Zimmergröße_Gesamtmiete = WG_Subdaten[3,], 
+                          Adresse = WG_Subdaten[4,], 
+                          Datum = WG_Subdaten[5,], 
+                          WG_Details = WG_Subdaten[6,],
+                          Kostenfeld = WG_Subdaten[7,],
+                          Angaben_zum_Objekt = WG_Subdaten[8,],
+                          Freitext_Zimmer = WG_Subdaten[9,],
+                          Freitext_Lage = WG_Subdaten[10,],
+                          Freitext_WG_Leben = WG_Subdaten[11,],
+                          Freitext_Sonstiges = WG_Subdaten[12,],
+                          Datum_Scraping = Sys.Date()))
     
     
     print({
@@ -240,33 +239,48 @@ sink()
 
 ################################################################################
 #####                                                                      #####
-#####                          Rohaten speichern                           #####
+#####                          Rohdaten speichern                          #####
 #####                                                                      #####
 ################################################################################
 
 
+if (nrow(Rohdaten_neu) == 0 || ncol(Rohdaten_neu) == 0) {
+  print("KEINE NEUEN ANZEIGEN GESCRAPED")
+  stop("Skript wird beendet")
+}
+
+
 ## Nicht vollständig gescrapte Fälle entfernen
 
-Datensatz_final <- Datensatz_Rohdaten[1:length(as.vector(na.omit(Datensatz_Rohdaten$Titel))),]
+Rohdaten_neu_gefiltert <- Rohdaten_neu %>%
+  filter(!(is.na(Titel)))
+# Rohdaten_neu_gefiltert <- Rohdaten_neu[1:6,]
+
+
+## Speichern des Backups für Rohdaten
+
+write.csv(Rohdaten_neu_gefiltert, paste0("Hamburg/Daten/Backup/Rohdaten/Rohdaten ",
+                                         format(Sys.time(), "%Y.%m.%d {%H-%M}"), ".csv"), 
+          row.names = FALSE)
+
 
 
 ## Neue Daten mit altem Datensatz verbinden 
 
-Rohdaten_neu <- read_csv("Hamburg/Daten/Rohdaten/Rohdaten.csv",
-                         show_col_types = FALSE) %>%
-  rbind(Datensatz_final) # %>%
+Rohdaten_gesamt <- read_csv("Hamburg/Daten/Rohdaten/Rohdaten.csv",
+                            show_col_types = FALSE) %>%
+  rbind(Rohdaten_neu_gefiltert)  # %>%
 #  distinct(Link, .keep_all = TRUE)
 
 
-# if (length(Selektionslinks) + nrow(Datensatz_final) != nrow(Rohdaten_neu)) {
-#   beepr::beep(9)
-#   stop("Eigener Abbruch wegen fehlerhafter Dateien")
-# }
 
 
 ## Alten Datensatz mit neuem Überschreiben 
 
-write.csv(Rohdaten_neu, "Hamburg/Daten/Rohdaten/Rohdaten.csv", row.names = FALSE)
+write.csv(Rohdaten_gesamt, "Hamburg/Daten/Rohdaten/Rohdaten.csv", row.names = FALSE)
+
+
+
 
 
 
@@ -281,8 +295,6 @@ message("---------- DATENAUFBEREITUNG -----------")
 
 
 # Aufbereitungsskripte durchlaufen lassen
-
-source("Hamburg/Skripte/Datenscraping/Aufbereitungskript neue_Rohdaten Hamburg.R")
 
 source("Hamburg/Skripte/Datenscraping/Aufbereitungsskript Hamburg.R")
 

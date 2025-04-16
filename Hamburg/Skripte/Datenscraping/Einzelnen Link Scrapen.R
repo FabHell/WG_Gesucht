@@ -8,20 +8,42 @@
 ################################################################################
 
 
-Link <- " "
+
+
+Einzellink <- "https://www.wg-gesucht.de/wg-zimmer-in-Hamburg-Wilhelmsburg.11964734.html"
+
+
 
 
 ## Ggf. alten Link entfernen ---------------------------------------------------
 
-# Rohdaten_neu <- read_csv("Hamburg/Daten/Rohdaten/Rohdaten.csv", 
-#                          show_col_types = FALSE) 
-# 
-# Rohdaten_neu <- Rohdaten_neu %>%
-#   filter(!(Link == Link))
-# 
-# write.csv(Rohdaten_neu, "Hamburg/Daten/Rohdaten/Rohdaten.csv", row.names = FALSE)
+Analysedaten_gesamt <- read_csv("Hamburg/Daten/Analysedaten/Analysedaten.csv",
+                                show_col_types = FALSE)
+
+Analysedaten_gesamt <- Analysedaten_gesamt %>%
+  filter(Link != Einzellink)
+
+write.csv(Analysedaten_gesamt, "Hamburg/Daten/Analysedaten/Analysedaten.csv", 
+          row.names = FALSE)
 
 
+Rohdaten_gesamt <- read_csv("Hamburg/Daten/Rohdaten/Rohdaten.csv",
+                            show_col_types = FALSE)
+
+Rohdaten_gesamt <- Rohdaten_gesamt %>%
+  filter(Link != Einzellink)
+
+write.csv(Rohdaten_gesamt, "Hamburg/Daten/Rohdaten/Rohdaten.csv", row.names = FALSE)
+
+
+
+# Liste mit gescrapten Einzellinks 
+#   (ursprüngliche Links sind noch in Backups enthalten)
+#
+#
+#
+#
+#
 
 
 ## Scraping des Links ----------------------------------------------------------
@@ -29,7 +51,7 @@ Link <- " "
 
 Datensatz_Rohdaten <- tibble()
 
-WG_Angebot <- read_html(Link)
+WG_Angebot <- read_html(Einzellink)
 
 
 
@@ -92,14 +114,25 @@ Freitext_Sonstiges <- WG_Angebot %>%
 Datum_Scraping = Sys.Date()
 
 
-Datensatz_final <- tibble(Link, Titel, WG_Konstellation, Zimmergröße_Gesamtmiete, 
-                          Adresse, Datum, WG_Details, Kostenfeld, Angaben_zum_Objekt, 
-                          Freitext_Zimmer, Freitext_Lage, Freitext_WG_Leben,
-                          Freitext_Sonstiges, Datum_Scraping)
+Rohdaten_neu <- tibble(Link, Titel, WG_Konstellation, Zimmergröße_Gesamtmiete, 
+                       Adresse, Datum, WG_Details, Kostenfeld, Angaben_zum_Objekt, 
+                       Freitext_Zimmer, Freitext_Lage, Freitext_WG_Leben,
+                       Freitext_Sonstiges, Datum_Scraping)
 
 
-Rohdaten_neu <- read_csv("Hamburg/Daten/Rohdaten/Rohdaten.csv",
-                         show_col_types = FALSE) %>%
-  rbind(Datensatz_final)
 
-write.csv(Rohdaten_neu, "Hamburg/Daten/Rohdaten/Rohdaten.csv", row.names = FALSE)
+## In Rohdaten speichern -------------------------------------------------------
+
+Rohdaten_gesamt <- read_csv("Hamburg/Daten/Rohdaten/Rohdaten.csv",
+                             show_col_types = FALSE) %>%
+  rbind(Rohdaten_neu) 
+
+write.csv(Rohdaten_gesamt, "Hamburg/Daten/Rohdaten/Rohdaten.csv", 
+          row.names = FALSE)
+
+
+
+## Datenbereinigung ausführen und in Analysedaten speichern --------------------
+
+source("Hamburg/Skripte/Datenscraping/Aufbereitungsskript Hamburg.R")
+
